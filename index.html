@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- Primary SEO Meta Tags -->
+    <title>Sprite Converter | Advanced Image to Code Tool</title>
+    <meta name="description" content="Efficiently transform images into pixel-perfect code arrays. This Sprite Converter features smart transparency detection, automated color palette mapping, and multiple export formats including binary and color maps for game development.">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <style>
+        .pixel-grid {
+            image-rendering: pixelated;
+        }
+        .drop-zone {
+            border: 2px dashed #cbd5e1;
+            transition: all 0.2s;
+        }
+        .drop-zone.dragover {
+            border-color: #3b82f6;
+            background-color: #eff6ff;
+        }
+        .checker-bg {
+            background-image: linear-gradient(45deg, #ccc 25%, transparent 25%), 
+                              linear-gradient(-45deg, #ccc 25%, transparent 25%), 
+                              linear-gradient(45deg, transparent 75%, #ccc 75%), 
+                              linear-gradient(-45deg, transparent 75%, #ccc 75%);
+            background-size: 10px 10px;
+            background-position: 0 0, 0 5px, 5px -5px, -5px 0px;
+        }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        
+        @media (min-width: 768px) {
+            .app-container {
+                height: 100vh;
+                display: flex;
+                flex-direction: column;
+                overflow: hidden;
+            }
+            .main-content {
+                flex: 1;
+                min-height: 0;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800 p-4 md:p-6 font-sans">
+
+    <div class="max-w-7xl mx-auto space-y-4 app-container">
+        
+        <!-- Header Section -->
+        <header class="text-center space-y-1">
+            <h1 class="text-2xl font-bold text-gray-900 leading-tight">Sprite Converter</h1>
+            <p class="text-sm text-gray-600">Transform images into programmable code with smart transparency and color palettes.</p>
+        </header>
+
+        <main class="grid md:grid-cols-12 gap-6 main-content">
+            
+            <!-- Settings Column -->
+            <section class="md:col-span-4 h-full min-h-0">
+                <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-100 h-full flex flex-col overflow-y-auto custom-scrollbar">
+                    <h2 class="text-md font-bold text-gray-800 mb-4 flex items-center gap-2">
+                        <span class="bg-blue-600 text-white w-5 h-5 flex items-center justify-center rounded-full text-[10px]">1</span>
+                        Input & Settings
+                    </h2>
+                    
+                    <!-- Drop Zone -->
+                    <div id="dropZone" class="drop-zone rounded-lg flex flex-col items-center justify-center cursor-pointer text-center p-4 mb-4 bg-gray-50 hover:bg-white relative group min-h-[120px]" aria-label="Upload sprite image">
+                        <div id="placeholder" class="pointer-events-none">
+                            <svg class="w-6 h-6 text-gray-400 mx-auto mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2-2H6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                            <p class="text-xs text-gray-500 font-medium">Click or Drag Image</p>
+                        </div>
+                        <input type="file" id="fileInput" class="hidden" accept="image/*">
+                        <img id="thumbPreview" alt="Image source preview" class="absolute inset-0 w-full h-full object-contain p-2 hidden pointer-events-none">
+                    </div>
+
+                    <div class="space-y-4 flex-1">
+                        <!-- Grid Size Selection -->
+                        <fieldset>
+                            <legend class="block text-[10px] font-bold text-gray-500 uppercase tracking-wide mb-2">Grid Size</legend>
+                            <div class="flex bg-gray-100 p-1 rounded-lg">
+                                <label class="flex-1 text-center cursor-pointer">
+                                    <input type="radio" name="size" value="16" checked class="peer hidden">
+                                    <span class="block py-1 text-xs font-medium text-gray-500 rounded-md peer-checked:bg-white peer-checked:text-blue-600 peer-checked:shadow-sm transition-all">16x</span>
+                                </label>
+                                <label class="flex-1 text-center cursor-pointer">
+                                    <input type="radio" name="size" value="32" class="peer hidden">
+                                    <span class="block py-1 text-xs font-medium text-gray-500 rounded-md peer-checked:bg-white peer-checked:text-blue-600 peer-checked:shadow-sm transition-all">32x</span>
+                                </label>
+                                <label class="flex-1 text-center cursor-pointer">
+                                    <input type="radio" name="size" value="48" class="peer hidden">
+                                    <span class="block py-1 text-xs font-medium text-gray-500 rounded-md peer-checked:bg-white peer-checked:text-blue-600 peer-checked:shadow-sm transition-all">48x</span>
+                                </label>
+                                <label class="flex-1 text-center cursor-pointer">
+                                    <input type="radio" name="size" value="64" class="peer hidden">
+                                    <span class="block py-1 text-xs font-medium text-gray-500 rounded-md peer-checked:bg-white peer-checked:text-blue-600 peer-checked:shadow-sm transition-all">64x</span>
+                                </label>
+                            </div>
+                        </fieldset>
+
+                        <!-- Scaling Mode Selection -->
+                        <fieldset class="border-t border-gray-100 pt-3">
+                            <legend class="block text-[10px] font-bold text-gray-500 uppercase tracking-wide mb-2">Scaling Method</legend>
+                            <div class="grid grid-cols-2 gap-2">
+                                <label class="flex items-center gap-2 cursor-pointer p-2 rounded border border-gray-100 hover:bg-gray-50">
+                                    <input type="radio" name="scaling" value="pixel" checked class="text-blue-600 focus:ring-blue-500">
+                                    <span class="text-xs text-gray-700">Pixelated</span>
+                                </label>
+                                <label class="flex items-center gap-2 cursor-pointer p-2 rounded border border-gray-100 hover:bg-gray-50">
+                                    <input type="radio" name="scaling" value="smooth" class="text-blue-600 focus:ring-blue-500">
+                                    <span class="text-xs text-gray-700">Smooth</span>
+                                </label>
+                            </div>
+                        </fieldset>
+
+                        <!-- Transparency Tools -->
+                        <fieldset class="border-t border-gray-100 pt-3">
+                            <legend class="block text-[10px] font-bold text-gray-500 uppercase tracking-wide mb-2">Transparency Tools</legend>
+                            <div class="space-y-3">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-xs text-gray-700">Target Color</span>
+                                    <div class="flex items-center gap-2">
+                                        <div id="activeColorSwatch" class="w-6 h-6 rounded border border-gray-300 checker-bg cursor-pointer shadow-sm" title="Reset to Auto (Alpha Channel)"></div>
+                                        <button id="pickColorBtn" type="button" class="text-[10px] bg-blue-50 text-blue-700 px-2 py-1 rounded border border-blue-100 hover:bg-blue-100 transition-colors">
+                                            Pick From Image
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="flex items-center gap-3">
+                                    <label for="tolerance" class="text-[10px] text-gray-500 w-16">Tolerance</label>
+                                    <input type="range" id="tolerance" min="0" max="200" value="10" class="flex-1 h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                                    <span class="text-[10px] font-mono text-gray-500 w-6 text-right" id="tolVal">10</span>
+                                </div>
+                                <label class="flex items-start gap-2 p-2 bg-blue-50/50 rounded border border-blue-100/50 cursor-pointer">
+                                    <input type="checkbox" id="floodFill" checked class="mt-1 text-blue-600 rounded border-gray-300 focus:ring-blue-500">
+                                    <div class="text-[10px] text-blue-800 leading-tight">
+                                        <span class="font-bold">Protect Inner Colors (Flood Fill)</span>
+                                        <p class="opacity-70">Only removes specified color if connected to the edges.</p>
+                                    </div>
+                                </label>
+                            </div>
+                        </fieldset>
+
+                        <!-- Export Options -->
+                        <fieldset class="border-t border-gray-100 pt-3">
+                            <legend class="block text-[10px] font-bold text-gray-500 uppercase tracking-wide mb-2">Output Format</legend>
+                            <div class="space-y-1">
+                                <label class="flex items-center gap-2 cursor-pointer">
+                                    <input type="radio" name="outputMode" value="color" checked class="text-blue-600 focus:ring-blue-500">
+                                    <span class="text-xs text-gray-700 font-medium">Color (Palette Map)</span>
+                                </label>
+                                <label class="flex items-center gap-2 cursor-pointer">
+                                    <input type="radio" name="outputMode" value="binary" class="text-blue-600 focus:ring-blue-500">
+                                    <span class="text-xs text-gray-700 font-medium">Binary (0/1)</span>
+                                </label>
+                            </div>
+                        </fieldset>
+                        <div class="pt-1">
+                            <label class="flex items-center justify-between text-xs text-gray-700">
+                                <span>Limit Colors (62 max)</span>
+                                <input type="checkbox" id="groupColors" checked class="rounded text-blue-600 focus:ring-blue-500">
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Main Workspace Column -->
+            <section class="md:col-span-8 h-full min-h-0 flex flex-col gap-4">
+                <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-100 h-full flex flex-col min-h-0">
+                    
+                    <div class="flex items-center justify-between mb-3">
+                        <h2 class="text-md font-bold text-gray-800 flex items-center gap-2">
+                            <span class="bg-blue-600 text-white w-5 h-5 flex items-center justify-center rounded-full text-[10px]">2</span>
+                            Preview & Code
+                        </h2>
+                        <div class="flex items-center gap-3">
+                            <span id="statusMsg" class="text-[10px] font-medium text-orange-500 hidden bg-orange-50 px-2 py-1 rounded animate-pulse">Click image to pick color...</span>
+                            <button id="copyBtn" class="text-xs bg-gray-900 text-white px-4 py-1.5 rounded-lg hover:bg-gray-800 font-medium transition-all shadow-sm">Copy Code</button>
+                        </div>
+                    </div>
+                    
+                    <!-- Preview Row -->
+                    <div class="flex flex-col lg:flex-row gap-4 mb-4 flex-[1.2] min-h-0">
+                        <!-- Preview Canvas Container -->
+                        <div class="flex-1 bg-gray-100 rounded-lg border border-gray-200 flex items-center justify-center relative overflow-hidden p-2 group">
+                            <canvas id="previewCanvas" width="160" height="160" class="pixel-grid shadow-lg bg-white max-w-full max-h-full object-contain"></canvas>
+                            
+                            <!-- Viewer Background Toolbar -->
+                            <div class="absolute bottom-2 right-2 flex gap-1 bg-white/90 p-1 rounded-md border border-gray-200 shadow-sm z-10 backdrop-blur-sm opacity-60 group-hover:opacity-100 transition-opacity">
+                                <button class="w-4 h-4 rounded-sm border border-gray-300 checker-bg hover:ring-2 ring-blue-400 focus:outline-none" onclick="setPreviewBg('checkered')" aria-label="Checkered background"></button>
+                                <button class="w-4 h-4 rounded-sm border border-gray-300 bg-white hover:ring-2 ring-blue-400 focus:outline-none" onclick="setPreviewBg('white')" aria-label="White background"></button>
+                                <button class="w-4 h-4 rounded-sm border border-gray-300 bg-[#1f2937] hover:ring-2 ring-blue-400 focus:outline-none" onclick="setPreviewBg('black')" aria-label="Dark background"></button>
+                                <button class="w-4 h-4 rounded-sm border border-gray-300 bg-[#ff00ff] hover:ring-2 ring-blue-400 focus:outline-none" onclick="setPreviewBg('contrast')" aria-label="Contrast background"></button>
+                            </div>
+
+                            <div id="pickerOverlay" class="absolute inset-0 bg-blue-500/10 cursor-crosshair hidden flex items-center justify-center z-20">
+                                <span class="bg-black/75 text-white text-[10px] px-2 py-1 rounded pointer-events-none">Click background color</span>
+                            </div>
+                        </div>
+                        
+                        <!-- Color Palette Sidebar -->
+                        <aside class="w-full lg:w-44 bg-gray-50 rounded-lg border border-gray-200 flex flex-col min-h-0">
+                            <div class="p-2 border-b border-gray-200 bg-gray-100/50">
+                                <h3 class="text-[10px] font-bold text-gray-500 uppercase">Colors</h3>
+                            </div>
+                            <div id="paletteList" class="overflow-y-auto flex-1 p-2 space-y-1 custom-scrollbar">
+                                <div class="text-[10px] text-gray-400 italic text-center mt-4">Load image...</div>
+                            </div>
+                        </aside>
+                    </div>
+
+                    <!-- Output Area -->
+                    <div class="relative flex-1 min-h-0">
+                        <div class="absolute top-2 right-2 text-[10px] text-gray-500 font-mono bg-gray-800/10 px-2 py-0.5 rounded pointer-events-none">JS Array</div>
+                        <textarea id="output" class="w-full h-full font-mono text-[10px] leading-tight bg-gray-900 text-green-400 p-3 rounded-lg resize-none focus:outline-none focus:ring-1 focus:ring-blue-500 scroll-smooth custom-scrollbar" readonly spellcheck="false">// Generated code...</textarea>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        const els = {
+            dropZone: document.getElementById('dropZone'),
+            fileInput: document.getElementById('fileInput'),
+            thumbPreview: document.getElementById('thumbPreview'),
+            placeholder: document.getElementById('placeholder'),
+            output: document.getElementById('output'),
+            previewCanvas: document.getElementById('previewCanvas'),
+            paletteList: document.getElementById('paletteList'),
+            copyBtn: document.getElementById('copyBtn'),
+            sizeInputs: document.querySelectorAll('input[name="size"]'),
+            groupColors: document.getElementById('groupColors'),
+            scalingInputs: document.querySelectorAll('input[name="scaling"]'),
+            outputModeInputs: document.querySelectorAll('input[name="outputMode"]'),
+            tolerance: document.getElementById('tolerance'),
+            tolVal: document.getElementById('tolVal'),
+            floodFill: document.getElementById('floodFill'),
+            activeColorSwatch: document.getElementById('activeColorSwatch'),
+            pickColorBtn: document.getElementById('pickColorBtn'),
+            pickerOverlay: document.getElementById('pickerOverlay'),
+            statusMsg: document.getElementById('statusMsg')
+        };
+        const ctx = els.previewCanvas.getContext('2d', { willReadFrequently: true });
+        let state = {
+            img: null, targetSize: 16, transparentColor: null, isPicking: false,
+            processedGrid: [], paletteMap: {}, previewBg: 'checkered'
+        };
+        const MAP_CHARS = "123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+        
+        // Manhattan distance for more intuitive tolerance
+        const getColorDist = (r1, g1, b1, r2, g2, b2) => {
+            return Math.abs(r1 - r2) + Math.abs(g1 - g2) + Math.abs(b1 - b2);
+        };
+
+        window.setPreviewBg = function(type) {
+            state.previewBg = type;
+            if (state.img) { processImage(); } else {
+                const displayScale = 10;
+                const size = state.targetSize || 16;
+                els.previewCanvas.width = size * displayScale;
+                els.previewCanvas.height = size * displayScale;
+                drawBackground(ctx, els.previewCanvas.width, els.previewCanvas.height, displayScale);
+            }
+        };
+
+        els.sizeInputs.forEach(input => {
+            input.addEventListener('change', (e) => {
+                state.targetSize = parseInt(e.target.value);
+                if (state.img) processImage();
+            });
+        });
+
+        els.outputModeInputs.forEach(input => {
+            input.addEventListener('change', () => {
+                if (state.img && state.processedGrid.length > 0) { generateCode(state.processedGrid, state.paletteMap); }
+            });
+        });
+
+        els.scalingInputs.forEach(input => {
+            input.addEventListener('change', () => { if (state.img) processImage(); });
+        });
+
+        [els.groupColors, els.floodFill].forEach(el => {
+            el.addEventListener('change', () => { if(state.img) processImage(); });
+        });
+
+        els.tolerance.addEventListener('input', (e) => {
+            els.tolVal.innerText = e.target.value;
+            if(state.img) processImage();
+        });
+
+        els.dropZone.addEventListener('click', () => els.fileInput.click());
+        els.fileInput.addEventListener('change', handleFile);
+        els.dropZone.addEventListener('dragover', (e) => { e.preventDefault(); els.dropZone.classList.add('border-blue-500', 'bg-blue-50'); });
+        els.dropZone.addEventListener('dragleave', () => { els.dropZone.classList.remove('border-blue-500', 'bg-blue-50'); });
+        els.dropZone.addEventListener('drop', (e) => {
+            e.preventDefault(); els.dropZone.classList.remove('border-blue-500', 'bg-blue-50');
+            const file = e.dataTransfer.files[0];
+            if (file && file.type.startsWith('image/')) readFile(file);
+        });
+
+        els.pickColorBtn.addEventListener('click', togglePicker);
+        els.pickerOverlay.addEventListener('click', (e) => {
+            if (!state.img) return;
+            const rect = els.previewCanvas.getBoundingClientRect();
+            const scaleX = els.previewCanvas.width / rect.width;
+            const scaleY = els.previewCanvas.height / rect.height;
+            const x = (e.clientX - rect.left) * scaleX;
+            const y = (e.clientY - rect.top) * scaleY;
+            const pixel = ctx.getImageData(x, y, 1, 1).data;
+            setTransparentColor({r: pixel[0], g: pixel[1], b: pixel[2]});
+            togglePicker(false);
+        });
+
+        els.activeColorSwatch.addEventListener('click', () => {
+            state.transparentColor = null; 
+            els.activeColorSwatch.style.backgroundColor = 'transparent';
+            els.activeColorSwatch.title = "Auto-detect alpha";
+            if(state.img) processImage();
+        });
+
+        els.copyBtn.addEventListener('click', () => {
+            els.output.select();
+            document.execCommand('copy');
+            const originalText = els.copyBtn.innerText;
+            els.copyBtn.innerText = "Copied!";
+            els.copyBtn.classList.add('bg-green-600');
+            setTimeout(() => {
+                els.copyBtn.innerText = originalText;
+                els.copyBtn.classList.remove('bg-green-600');
+            }, 1500);
+        });
+
+        function handleFile(e) { const file = e.target.files[0]; if (file) readFile(file); }
+        function readFile(file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = new Image();
+                img.onload = () => {
+                    state.img = img;
+                    els.thumbPreview.src = e.target.result;
+                    els.thumbPreview.classList.remove('hidden');
+                    els.placeholder.classList.add('hidden');
+                    state.transparentColor = null; 
+                    els.activeColorSwatch.style.backgroundColor = 'transparent';
+                    processImage();
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function togglePicker(forceState) {
+            state.isPicking = forceState !== undefined ? forceState : !state.isPicking;
+            if (state.isPicking) {
+                els.pickerOverlay.classList.remove('hidden');
+                els.statusMsg.classList.remove('hidden');
+                els.pickColorBtn.classList.add('bg-blue-600', 'text-white');
+                els.pickColorBtn.classList.remove('bg-blue-50', 'text-blue-700');
+            } else {
+                els.pickerOverlay.classList.add('hidden');
+                els.statusMsg.classList.add('hidden');
+                els.pickColorBtn.classList.remove('bg-blue-600', 'text-white');
+                els.pickColorBtn.classList.add('bg-blue-50', 'text-blue-700');
+            }
+        }
+
+        function setTransparentColor(rgb) {
+            state.transparentColor = rgb;
+            els.activeColorSwatch.style.backgroundColor = `rgb(${rgb.r},${rgb.g},${rgb.b})`;
+            els.activeColorSwatch.title = `Transparent Color: rgb(${rgb.r},${rgb.g},${rgb.b})`;
+            processImage();
+        }
+
+        function getDownscaledCanvas(img, targetW, targetH, isSmooth) {
+            if (!isSmooth || targetW >= img.width / 2) { return img; }
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            let curW = Math.floor(img.width / 2);
+            let curH = Math.floor(img.height / 2);
+            canvas.width = curW; canvas.height = curH;
+            ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
+            ctx.drawImage(img, 0, 0, curW, curH);
+            while (curW / 2 >= targetW) {
+                const newW = Math.floor(curW / 2);
+                const newH = Math.floor(curH / 2);
+                const temp = document.createElement('canvas');
+                temp.width = newW; temp.height = newH;
+                const tempCtx = temp.getContext('2d');
+                tempCtx.imageSmoothingEnabled = true; tempCtx.imageSmoothingQuality = 'high';
+                tempCtx.drawImage(canvas, 0, 0, curW, curH, 0, 0, newW, newH);
+                canvas.width = newW; canvas.height = newH;
+                ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
+                ctx.drawImage(temp, 0, 0);
+                curW = newW; curH = newH;
+            }
+            return canvas;
+        }
+
+        function processImage() {
+            if (!state.img) return;
+            const size = state.targetSize;
+            const scalingMode = document.querySelector('input[name="scaling"]:checked').value;
+            const isSmooth = (scalingMode === 'smooth');
+            const offCanvas = document.createElement('canvas');
+            offCanvas.width = size; offCanvas.height = size;
+            const offCtx = offCanvas.getContext('2d');
+            const scale = Math.min(size / state.img.width, size / state.img.height);
+            const w = Math.round(state.img.width * scale);
+            const h = Math.round(state.img.height * scale);
+            const xOffset = Math.floor((size - w) / 2);
+            const yOffset = Math.floor((size - h) / 2);
+            
+            offCtx.clearRect(0, 0, size, size); 
+            const sourceToDraw = getDownscaledCanvas(state.img, w, h, isSmooth);
+            offCtx.imageSmoothingEnabled = isSmooth;
+            if (isSmooth) offCtx.imageSmoothingQuality = 'high';
+            else offCtx.imageSmoothingEnabled = false;
+            offCtx.drawImage(sourceToDraw, 0, 0, sourceToDraw.width, sourceToDraw.height, xOffset, yOffset, w, h);
+            
+            const imageData = offCtx.getImageData(0, 0, size, size);
+            const data = imageData.data;
+            const tolerance = parseInt(els.tolerance.value);
+            
+            let isTransparent = Array(size).fill().map(() => Array(size).fill(false));
+
+            // Phase 1: Basic Transparency Detection
+            for(let y=0; y<size; y++) {
+                for(let x=0; x<size; x++) {
+                    const i = (y * size + x) * 4;
+                    const r = data[i], g = data[i+1], b = data[i+2], a = data[i+3];
+                    
+                    // Always treat transparent alpha as transparent
+                    if (a < 50) { 
+                        isTransparent[y][x] = true; 
+                        continue; 
+                    }
+                    
+                    // If manual color selected, check distance
+                    if (state.transparentColor) {
+                        const dist = getColorDist(r, g, b, state.transparentColor.r, state.transparentColor.g, state.transparentColor.b);
+                        if (dist <= tolerance) { 
+                            isTransparent[y][x] = true; 
+                        }
+                    }
+                }
+            }
+
+            // Phase 2: Flood Fill (Protect Inner Colors)
+            if (els.floodFill.checked && state.transparentColor) {
+                const fillMask = Array(size).fill().map(() => Array(size).fill(false));
+                const stack = [];
+                
+                // Seed corners
+                [[0,0], [size-1, 0], [0, size-1], [size-1, size-1]].forEach(p => stack.push(p));
+
+                const visited = new Set();
+                while(stack.length > 0) {
+                    const [px, py] = stack.pop();
+                    const key = `${px},${py}`;
+                    if(visited.has(key) || px < 0 || px >= size || py < 0 || py >= size) continue;
+                    visited.add(key);
+
+                    const i = (py * size + px) * 4;
+                    const r = data[i], g = data[i+1], b = data[i+2], a = data[i+3];
+                    
+                    let isMatch = false;
+                    if (a < 50) { 
+                        isMatch = true; 
+                    } else if (state.transparentColor) {
+                        const dist = getColorDist(r, g, b, state.transparentColor.r, state.transparentColor.g, state.transparentColor.b);
+                        if (dist <= tolerance) isMatch = true;
+                    }
+
+                    if (isMatch) {
+                        fillMask[py][px] = true;
+                        stack.push([px+1, py], [px-1, py], [px, py+1], [px, py-1]);
+                    }
+                }
+
+                // Apply flood mask: only pixels that are matched AND connected to the outside are transparent
+                for(let y=0; y<size; y++) {
+                    for(let x=0; x<size; x++) {
+                        const i = (y * size + x) * 4;
+                        if (data[i+3] < 50) {
+                            isTransparent[y][x] = true; // Original alpha always transparent
+                        } else {
+                            // If it matches the color, check if it was part of the flood
+                            isTransparent[y][x] = fillMask[y][x];
+                        }
+                    }
+                }
+            }
+
+            const colorCounts = {};
+            const pixelHexes = [];
+            for(let y=0; y<size; y++) {
+                for(let x=0; x<size; x++) {
+                    if (isTransparent[y][x]) { 
+                        pixelHexes.push(null); 
+                    } else {
+                        const i = (y * size + x) * 4;
+                        const hex = rgbToHex(data[i], data[i+1], data[i+2]);
+                        pixelHexes.push(hex);
+                        colorCounts[hex] = (colorCounts[hex] || 0) + 1;
+                    }
+                }
+            }
+
+            let palette = Object.keys(colorCounts).sort((a,b) => colorCounts[b] - colorCounts[a]);
+            if (els.groupColors.checked && palette.length > MAP_CHARS.length) {
+                palette = palette.slice(0, MAP_CHARS.length);
+            }
+
+            const hexToChar = {};
+            const charToHex = {};
+            palette.forEach((hex, idx) => {
+                const char = MAP_CHARS[idx];
+                hexToChar[hex] = char;
+                charToHex[char] = hex;
+            });
+
+            const grid = [];
+            let currentRow = "";
+            const displayScale = 10;
+            els.previewCanvas.width = size * displayScale;
+            els.previewCanvas.height = size * displayScale;
+            
+            drawBackground(ctx, els.previewCanvas.width, els.previewCanvas.height, displayScale);
+            
+            pixelHexes.forEach((hex, i) => {
+                let char = '0';
+                if (hex !== null) {
+                    if (hexToChar[hex]) { 
+                        char = hexToChar[hex]; 
+                    } else {
+                        const nearest = findNearestColor(hex, palette);
+                        char = hexToChar[nearest];
+                    }
+                    const px = (i % size) * displayScale;
+                    const py = Math.floor(i / size) * displayScale;
+                    ctx.fillStyle = charToHex[char];
+                    ctx.fillRect(px, py, displayScale, displayScale);
+                }
+                currentRow += char;
+                if ((i + 1) % size === 0) { 
+                    grid.push(currentRow); 
+                    currentRow = ""; 
+                }
+            });
+
+            state.processedGrid = grid;
+            state.paletteMap = charToHex;
+            updatePaletteList(charToHex);
+            generateCode(grid, charToHex);
+        }
+
+        function updatePaletteList(charToHex) {
+            els.paletteList.innerHTML = '';
+            const createItem = (char, color, label) => `
+                <div class="flex items-center gap-2 text-[10px] bg-white p-1 rounded border border-gray-100 shadow-xs">
+                    <span class="font-mono bg-gray-100 w-4 h-4 flex items-center justify-center rounded text-gray-600 font-bold">${char}</span>
+                    <div class="w-3 h-3 rounded-sm border border-gray-200 ${color === 'transparent' ? 'checker-bg' : ''}" style="background-color: ${color}"></div>
+                    <span class="font-mono text-gray-500 truncate">${label}</span>
+                </div>`;
+            els.paletteList.innerHTML += createItem('0', 'transparent', 'Clear');
+            Object.keys(charToHex).forEach(char => {
+                els.paletteList.innerHTML += createItem(char, charToHex[char], charToHex[char]);
+            });
+        }
+
+        function generateCode(grid, charToHex) {
+            const mode = document.querySelector('input[name="outputMode"]:checked').value;
+            let output = "";
+            if (mode === 'binary') {
+                output += `// Binary Map (0 = Empty, 1 = Filled)\n`;
+                output += `const SPRITES = {\n`;
+                output += `    mySprite: [\n`;
+                grid.forEach((row, i) => {
+                    const binaryRow = row.split('').map(c => c === '0' ? '0' : '1').join('');
+                    output += `        "${binaryRow}"${i < grid.length-1 ? ',' : ''}\n`;
+                });
+                output += `    ]\n};`;
+            } else {
+                output += `const PALETTE = {\n`;
+                output += `    '0': null, // Transparent\n`;
+                Object.keys(charToHex).forEach(char => { output += `    '${char}': '${charToHex[char]}',\n`; });
+                output += `};\n\n`;
+                output += `const SPRITES = {\n`;
+                output += `    mySprite: [\n`;
+                grid.forEach((row, i) => { output += `        "${row}"${i < grid.length-1 ? ',' : ''}\n`; });
+                output += `    ]\n};`;
+            }
+            els.output.value = output;
+        }
+
+        function rgbToHex(r, g, b) { return "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1).toUpperCase(); }
+        function hexToRgb(hex) {
+            const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+            return result ? { r: parseInt(result[1], 16), g: parseInt(result[2], 16), b: parseInt(result[3], 16) } : null;
+        }
+
+        function findNearestColor(targetHex, paletteHexes) {
+            let minDist = Infinity; let nearest = paletteHexes[0];
+            const t = hexToRgb(targetHex); if(!t) return nearest;
+            paletteHexes.forEach(p => {
+                const c = hexToRgb(p);
+                const dist = getColorDist(t.r, t.g, t.b, c.r, c.g, c.b);
+                if(dist < minDist) { minDist = dist; nearest = p; }
+            });
+            return nearest;
+        }
+
+        function drawBackground(ctx, w, h, s) {
+            const type = state.previewBg;
+            ctx.clearRect(0, 0, w, h);
+            if (type === 'black') { ctx.fillStyle = '#1f2937'; ctx.fillRect(0, 0, w, h); }
+            else if (type === 'white') { ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, w, h); }
+            else if (type === 'contrast') { ctx.fillStyle = '#ff00ff'; ctx.fillRect(0, 0, w, h); }
+            else {
+                ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, w, h);
+                ctx.fillStyle = '#e5e7eb';
+                for (let y = 0; y < h; y += s) {
+                    for (let x = 0; x < w; x += s) {
+                        if ((Math.floor(x/s) + Math.floor(y/s)) % 2 === 0) ctx.fillRect(x, y, s, s);
+                    }
+                }
+            }
+        }
+        window.addEventListener('load', () => window.setPreviewBg('checkered'));
+    </script>
+</body>
+</html>
